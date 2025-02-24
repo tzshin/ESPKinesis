@@ -57,20 +57,26 @@ def parse_arguments():
     
     return parser.parse_args(custom_args)
 
-args = parse_arguments()
-mode = args.mode.lower()
-print(f"Selected build mode: {mode}")
+# Define the platformio-run targets that require build mode selection.
+build_mode_targets = {"upload"}
 
-mode_config = {
-    "transmitter": {"folder": "transmitter", "macro": "TRANSMITTER"},
-    "receiver":    {"folder": "receiver",    "macro": "RECEIVER"},
-    "show_mac":    {"folder": "show_mac",    "macro": "SHOW_MAC"},
-    "dev":         {"folder": "dev",         "macro": "DEV"}
-}
+if any(arg.lower() in build_mode_targets for arg in sys.argv):
+    args = parse_arguments()
+    mode = args.mode.lower()
+    print(f"Selected build mode: {mode}")
 
-if mode not in mode_config:
-    sys.exit(f"Error: Unknown build mode '{mode}'. Allowed modes: {', '.join(mode_config.keys())}")
-
-config = mode_config[mode]
-env.Replace(SRC_FILTER=["-<*>", f"+<{config['folder']}>"])
-env.Append(CPPDEFINES=[config["macro"]])
+    build_mode_config = {
+        "transmitter": {"folder": "transmitter", "macro": "TRANSMITTER"},
+        "receiver":    {"folder": "receiver",    "macro": "RECEIVER"},
+        "show_mac":    {"folder": "show_mac",      "macro": "SHOW_MAC"},
+        "dev":         {"folder": "dev",           "macro": "DEV"}
+    }
+    
+    if mode not in build_mode_config:
+        sys.exit(f"Error: Unknown build mode '{mode}'. Allowed modes: {', '.join(build_mode_config.keys())}")
+    
+    config = build_mode_config[mode]
+    env.Replace(SRC_FILTER=["-<*>", f"+<{config['folder']}>"])
+    env.Append(CPPDEFINES=[config["macro"]])
+else:
+    print("No build target detected that requires build mode selection. Skipping build mode configuration.")
