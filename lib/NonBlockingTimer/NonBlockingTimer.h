@@ -13,7 +13,7 @@ public:
 
   // Returns true if the timer is "ringing" (the period has elapsed).
   // Automatically resets the timer when the period has elapsed.
-  bool is_timer_ringing()
+  bool is_ringing()
   {
     unsigned long currentTime = micros();
     if (currentTime - last_time >= period)
