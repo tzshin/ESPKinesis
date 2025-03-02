@@ -12,15 +12,29 @@ namespace tmanager
   // Define a constant for the number of channels.
   static constexpr uint8_t TARGET_CHANNEL_COUNT = 8;
 
+  struct ChannelData
+  {
+    uint16_t channels[TARGET_CHANNEL_COUNT];
+
+    // Constructor with an optional default value.
+    ChannelData(uint16_t default_value)
+    {
+      for (auto &ch : channels)
+        ch = default_value;
+    }
+  };
+
   // Structure to hold individual target information.
   struct Target
   {
-    uint8_t id;                              // Automatically assigned ID (order of addition)
-    uint8_t mac[6];                          // Receiver MAC address
-    uint16_t channels[TARGET_CHANNEL_COUNT]; // Current channel outputs
-    bool connection_state;                   // ESP-NOW send success flag
-    unsigned long last_successful_send;      // Timestamp of the last successful send
-    String name;                             // Optional human-readable name
+    uint8_t id;                         // Automatically assigned ID (order of addition)
+    uint8_t mac[6];                     // Receiver MAC address
+    ChannelData data;                   // Current channel outputs
+    bool connection_state;              // ESP-NOW send success flag
+    unsigned long last_successful_send; // Timestamp of the last successful send in microseconds
+    String name;                        // Optional human-readable name
+
+    Target() : id(0), data(0), connection_state(false), last_successful_send(0), name("") {}
   };
 
   class TargetManager
@@ -34,9 +48,10 @@ namespace tmanager
       Target new_target;
       new_target.id = next_id++;
       memcpy(new_target.mac, mac, 6);
+      // Optionally, override the default ChannelData if needed.
       for (int i = 0; i < TARGET_CHANNEL_COUNT; i++)
       {
-        new_target.channels[i] = 0;
+        new_target.data.channels[i] = 0;
       }
       new_target.connection_state = false;
       new_target.last_successful_send = 0;
@@ -75,8 +90,7 @@ namespace tmanager
     const std::vector<Target> &get_targets() const { return targets; }
 
     // Update the connection state and timestamp for a given target ID.
-    void update_target_connection(uint8_t id, bool success,
-                                  unsigned long timestamp)
+    void update_target_connection(uint8_t id, bool success, unsigned long timestamp)
     {
       for (auto &target : targets)
       {
@@ -93,14 +107,13 @@ namespace tmanager
     }
 
     // Update the channel data for a given target ID.
-    void update_target_channels(uint8_t id,
-                                const uint16_t new_channels[TARGET_CHANNEL_COUNT])
+    void update_target_channels(uint8_t id, const uint16_t new_channels[TARGET_CHANNEL_COUNT])
     {
       for (auto &target : targets)
       {
         if (target.id == id)
         {
-          memcpy(target.channels, new_channels, sizeof(uint16_t) * TARGET_CHANNEL_COUNT);
+          memcpy(target.data.channels, new_channels, sizeof(uint16_t) * TARGET_CHANNEL_COUNT);
           break;
         }
       }
@@ -120,13 +133,12 @@ namespace tmanager
       json += "\"channels\": [";
       for (int i = 0; i < TARGET_CHANNEL_COUNT; i++)
       {
-        json += String(target->channels[i]);
+        json += String(target->data.channels[i]);
         if (i < TARGET_CHANNEL_COUNT - 1)
           json += ",";
       }
       json += "],";
-      json += "\"connection_state\": " +
-              String(target->connection_state ? "true" : "false") + ",";
+      json += "\"connection_state\": " + String(target->connection_state ? "true" : "false") + ",";
       json += "\"last_successful_send\": " + String(target->last_successful_send);
       json += "}";
       return json;
@@ -149,8 +161,7 @@ namespace tmanager
     }
 
   private:
-    // Helper function (with underscore prefix) to convert a MAC address to a
-    // colon-separated string.
+    // Helper function to convert a MAC address to a colon-separated string.
     String _mac_to_string(const uint8_t mac[6]) const
     {
       char mac_str[18];
@@ -163,6 +174,6 @@ namespace tmanager
     uint8_t next_id;             // Next available ID for a new target.
   };
 
-} // namespace tm
+} // namespace tmanager
 
 #endif // TARGET_MANAGER_H
