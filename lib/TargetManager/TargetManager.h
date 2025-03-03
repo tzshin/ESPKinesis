@@ -89,36 +89,6 @@ namespace tmanager
     std::vector<Target> &get_targets() { return targets; }
     const std::vector<Target> &get_targets() const { return targets; }
 
-    // Update the connection state and timestamp for a given target ID.
-    void update_target_connection(uint8_t id, bool success, unsigned long timestamp)
-    {
-      for (auto &target : targets)
-      {
-        if (target.id == id)
-        {
-          target.connection_state = success;
-          if (success)
-          {
-            target.last_successful_send = timestamp;
-          }
-          break;
-        }
-      }
-    }
-
-    // Update the channel data for a given target ID.
-    void update_target_channels(uint8_t id, const uint16_t new_channels[TARGET_CHANNEL_COUNT])
-    {
-      for (auto &target : targets)
-      {
-        if (target.id == id)
-        {
-          memcpy(target.data.channels, new_channels, sizeof(uint16_t) * TARGET_CHANNEL_COUNT);
-          break;
-        }
-      }
-    }
-
     // Generate a JSON string representing a specific target.
     String get_target_json(uint8_t id) const
     {
