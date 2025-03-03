@@ -24,6 +24,7 @@ def parse_arguments():
         "    set \"PROGRAM_ARGS=--mode <build_mode>\" && pio run -e <platformio_env> -t <target>\n"
         "  Unix (Linux/macOS):\n"
         "    PROGRAM_ARGS=\"--mode <build_mode>\" pio run -e <platformio_env> -t <target>\n"
+        "\n"
         "  Replace <platformio_env> with the environment name from platformio.ini (e.g., c3, esp32dev).\n"
         "  Replace <target> with the desired action (e.g., upload, build, monitor, clean).\n"
     )
