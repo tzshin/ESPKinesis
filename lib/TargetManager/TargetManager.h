@@ -82,6 +82,19 @@ namespace tmanager
       return nullptr;
     }
 
+    // Retrieve a target by its MAC address.
+    const Target *get_target_by_mac(const uint8_t mac[6]) const
+    {
+      for (const auto &target : targets)
+      {
+        if (memcmp(target.mac, mac, 6) == 0)
+        {
+          return &target;
+        }
+      }
+      return nullptr;
+    }
+
     // Get the total number of targets managed.
     size_t get_target_count() const { return targets.size(); }
 
