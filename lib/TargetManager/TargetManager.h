@@ -59,7 +59,7 @@ namespace tmanager
       targets.push_back(new_target);
     }
 
-    // Retrieve a target by its assigned ID.
+    // Retrieve a target by its assigned ID (const version).
     const Target *get_target_by_id(uint8_t id) const
     {
       for (const auto &target : targets)
@@ -72,7 +72,20 @@ namespace tmanager
       return nullptr;
     }
 
-    // Retrieve a target by its index in the list.
+    // Retrieve a target by its assigned ID (non-const version).
+    Target *get_target_by_id(uint8_t id)
+    {
+      for (auto &target : targets)
+      {
+        if (target.id == id)
+        {
+          return &target;
+        }
+      }
+      return nullptr;
+    }
+
+    // Retrieve a target by its index in the list (const version).
     const Target *get_target_by_index(size_t index) const
     {
       if (index < targets.size())
@@ -82,10 +95,33 @@ namespace tmanager
       return nullptr;
     }
 
-    // Retrieve a target by its MAC address.
+    // Retrieve a target by its index in the list (non-const version).
+    Target *get_target_by_index(size_t index)
+    {
+      if (index < targets.size())
+      {
+        return &targets[index];
+      }
+      return nullptr;
+    }
+
+    // Retrieve a target by its MAC address (const version).
     const Target *get_target_by_mac(const uint8_t mac[6]) const
     {
       for (const auto &target : targets)
+      {
+        if (memcmp(target.mac, mac, 6) == 0)
+        {
+          return &target;
+        }
+      }
+      return nullptr;
+    }
+
+    // Retrieve a target by its MAC address (non-const version).
+    Target *get_target_by_mac(const uint8_t mac[6])
+    {
+      for (auto &target : targets)
       {
         if (memcmp(target.mac, mac, 6) == 0)
         {
