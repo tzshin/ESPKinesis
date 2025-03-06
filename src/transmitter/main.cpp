@@ -14,7 +14,6 @@ static constexpr int PPM_CHANNEL_COUNT = 8;
 PPMReader ppm_reader(PPM_PIN, PPM_CHANNEL_COUNT);
 
 // --- JSON Configuration ---
-static constexpr size_t JSON_SIZE = 1024; // Adjust based on your needs
 static constexpr int SERIAL_BAUD = 115200;
 static constexpr int JSON_SEND_HZ = 2;
 static constexpr unsigned long JSON_SEND_PERIOD_US = 1000000UL / JSON_SEND_HZ;
@@ -26,7 +25,8 @@ static constexpr unsigned long RADIO_SEND_PERIOD_US = 1000000UL / RADIO_SEND_FRE
 NonBlockingTimer radio_send_timer(RADIO_SEND_PERIOD_US);
 
 // --- ESP-NOW / TargetManager Configuration ---
-const uint8_t BROADCAST_ADDRS[][6] = {{0xb0, 0x81, 0x84, 0x06, 0x0e, 0xf0}};
+const uint8_t BROADCAST_ADDRS[][6] = {{0xb0, 0x81, 0x84, 0x06, 0x0e, 0xf0},
+                                      {0xb0, 0x81, 0x84, 0x06, 0x0a, 0xec}};
 static constexpr size_t NUM_BROADCAST_ADDRS =
     sizeof(BROADCAST_ADDRS) / sizeof(BROADCAST_ADDRS[0]);
 tmanager::TargetManager target_manager;
@@ -82,13 +82,13 @@ void send_radio()
  */
 void parse_json(const String &json_string)
 {
-  StaticJsonDocument<JSON_SIZE> doc;
+  JsonDocument doc;
   DeserializationError error = deserializeJson(doc, json_string);
 
   if (error)
   {
     // Create error response
-    StaticJsonDocument<JSON_SIZE> error_doc;
+    JsonDocument error_doc;
     error_doc["type"] = "error";
     error_doc["message"] = String("JSON parsing error: ") + error.c_str();
 
@@ -103,7 +103,7 @@ void parse_json(const String &json_string)
   if (!cmd_type)
   {
     // Create error response for missing command
-    StaticJsonDocument<JSON_SIZE> error_doc;
+    JsonDocument error_doc;
     error_doc["type"] = "error";
     error_doc["message"] = "Missing 'command' field in JSON";
 
@@ -114,7 +114,7 @@ void parse_json(const String &json_string)
   }
 
   // Process commands
-  StaticJsonDocument<JSON_SIZE> response_doc;
+  JsonDocument response_doc;
   response_doc["type"] = "response";
   response_doc["command"] = cmd_type;
 
@@ -140,10 +140,14 @@ void parse_json(const String &json_string)
  */
 void send_json()
 {
-  StaticJsonDocument<JSON_SIZE> doc;
+  JsonDocument doc;
+  JsonDocument targets_doc;
+
+  // Parse the pre-formatted JSON string from get_all_targets_json
+  deserializeJson(targets_doc, target_manager.get_all_targets_json());
 
   doc["type"] = "target_state";
-  doc["targets"] = target_manager.get_all_targets_json();
+  doc["targets"] = targets_doc.as<JsonArrayConst>(); // Add as a proper JSON array
 
   String json_string;
   serializeJson(doc, json_string);
