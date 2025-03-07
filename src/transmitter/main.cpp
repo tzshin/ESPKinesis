@@ -30,6 +30,7 @@ struct CommandEntry {
   const char* name;
   CommandHandler handler;
 };
+bool handle_override_channels(const JsonDocument& doc, JsonDocument& response_doc);
 const CommandEntry COMMAND_REGISTRY[] = {
   {"override_channels", handle_override_channels},
   // Add additional commands here
@@ -124,7 +125,7 @@ void send_error_response(const char* error_type, const String& error_message, co
  */
 bool handle_override_channels(const JsonDocument& doc, JsonDocument& response_doc) {
   // Validate required fields
-  if (!doc.containsKey("target_id") || !doc.containsKey("channels")) {
+  if (!doc["target_id"].is<int>() || !doc["channels"].is<JsonArrayConst>()) {
     response_doc["status"] = "error";
     response_doc["message"] = "Missing required fields: target_id and/or channels";
     return false;
@@ -190,7 +191,7 @@ void parse_json(const String& json_string) {
   }
 
   // Validate command field
-  if (!doc.containsKey("command")) {
+  if (!doc["command"].is<const char*>()) {
     send_error_response("error", "Missing 'command' field in JSON");
     return;
   }
