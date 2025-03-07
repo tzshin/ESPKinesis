@@ -28,11 +28,11 @@ namespace tmanager
   struct Target
   {
     uint8_t id;                         // Automatically assigned ID (order of addition)
+    String name;                        // Optional human-readable name
     uint8_t mac[6];                     // Receiver MAC address
     ChannelData data;                   // Current channel outputs
     bool connection_state;              // ESP-NOW send success flag
     unsigned long last_successful_send; // Timestamp of the last successful send in microseconds
-    String name;                        // Optional human-readable name
     bool channels_overridden;           // Flag indicating if channels are currently overridden
     unsigned long override_timeout;     // Timestamp when the override should expire (in micros)
 
