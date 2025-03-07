@@ -25,18 +25,18 @@ static constexpr unsigned long RADIO_SEND_PERIOD_US = 1000000UL / RADIO_SEND_FRE
 NonBlockingTimer radio_send_timer(RADIO_SEND_PERIOD_US);
 
 // --- Command Handling ---
-typedef bool (*CommandHandler)(const JsonDocument&, JsonDocument&);
-struct CommandEntry {
-  const char* name;
+typedef bool (*CommandHandler)(const JsonDocument &, JsonDocument &);
+struct CommandEntry
+{
+  const char *name;
   CommandHandler handler;
 };
-bool handle_override_channels(const JsonDocument& doc, JsonDocument& response_doc);
+bool handle_override_channels(const JsonDocument &doc, JsonDocument &response_doc);
 const CommandEntry COMMAND_REGISTRY[] = {
-  {"override_channels", handle_override_channels},
-  // Add additional commands here
+    {"override_channels", handle_override_channels},
+    // Add additional commands here
 };
 const size_t COMMAND_COUNT = sizeof(COMMAND_REGISTRY) / sizeof(CommandEntry);
-
 
 // --- ESP-NOW / TargetManager Configuration ---
 const uint8_t BROADCAST_ADDRS[][6] = {{0xb0, 0x81, 0x84, 0x06, 0x0e, 0xf0},
@@ -93,7 +93,8 @@ void send_espnow_radio()
  * Sends a JSON response to the serial port
  * @param response_doc The document to serialize and send
  */
-void send_json_response(const JsonDocument& response_doc) {
+void send_json_response(const JsonDocument &response_doc)
+{
   String response;
   serializeJson(response_doc, response);
   Serial.println(response);
@@ -105,15 +106,17 @@ void send_json_response(const JsonDocument& response_doc) {
  * @param error_message The error message
  * @param command Optional command that caused the error
  */
-void send_error_response(const char* error_type, const String& error_message, const char* command = nullptr) {
+void send_error_response(const char *error_type, const String &error_message, const char *command = nullptr)
+{
   JsonDocument error_doc;
   error_doc["type"] = error_type;
   error_doc["message"] = error_message;
-  
-  if (command) {
+
+  if (command)
+  {
     error_doc["command"] = command;
   }
-  
+
   send_json_response(error_doc);
 }
 
@@ -123,53 +126,60 @@ void send_error_response(const char* error_type, const String& error_message, co
  * @param response_doc The response document to fill
  * @return true if successful, false otherwise
  */
-bool handle_override_channels(const JsonDocument& doc, JsonDocument& response_doc) {
+bool handle_override_channels(const JsonDocument &doc, JsonDocument &response_doc)
+{
   // Validate required fields
-  if (!doc["target_id"].is<int>() || !doc["channels"].is<JsonArrayConst>()) {
+  if (!doc["target_id"].is<int>() || !doc["channels"].is<JsonArrayConst>())
+  {
     response_doc["status"] = "error";
     response_doc["message"] = "Missing required fields: target_id and/or channels";
     return false;
   }
-  
+
   int target_id = doc["target_id"];
   JsonArrayConst channels = doc["channels"].as<JsonArrayConst>();
-  
+
   // Find the target by ID
-  auto* target = target_manager.get_target_by_id(target_id);
-  if (!target) {
+  auto *target = target_manager.get_target_by_id(target_id);
+  if (!target)
+  {
     response_doc["status"] = "error";
     response_doc["message"] = "Target not found with ID: " + String(target_id);
     return false;
   }
-  
+
   // Validate channels array
-  if (channels.size() == 0 || channels.size() > tmanager::TARGET_CHANNEL_COUNT) {
+  if (channels.size() == 0 || channels.size() > tmanager::TARGET_CHANNEL_COUNT)
+  {
     response_doc["status"] = "error";
-    response_doc["message"] = "Invalid channel count. Expected 1-" + 
-                             String(tmanager::TARGET_CHANNEL_COUNT) + 
-                             ", got " + String(channels.size());
+    response_doc["message"] = "Invalid channel count. Expected 1-" +
+                              String(tmanager::TARGET_CHANNEL_COUNT) +
+                              ", got " + String(channels.size());
     return false;
   }
-  
+
   // Update channels from the received data
-  for (size_t i = 0; i < channels.size(); i++) {
-    if (!channels[i].is<int>()) {
+  for (size_t i = 0; i < channels.size(); i++)
+  {
+    if (!channels[i].is<int>())
+    {
       response_doc["status"] = "error";
       response_doc["message"] = "Channel values must be integers";
       return false;
     }
-    
+
     int value = channels[i];
     // Validate channel range (typical RC values)
-    if (value < 1000 || value > 2000) {
+    if (value < 1000 || value > 2000)
+    {
       response_doc["status"] = "error";
       response_doc["message"] = "Channel values must be between 1000-2000";
       return false;
     }
-    
+
     target->data.channels[i] = value;
   }
-  
+
   response_doc["status"] = "success";
   response_doc["message"] = "Channels updated for target " + String(target_id);
   return true;
@@ -179,46 +189,52 @@ bool handle_override_channels(const JsonDocument& doc, JsonDocument& response_do
  * Process a JSON command received from the control panel
  * @param json_string The JSON string to process
  */
-void parse_json(const String& json_string) {
+void parse_json(const String &json_string)
+{
   // Parse the incoming JSON
   JsonDocument doc;
   DeserializationError error = deserializeJson(doc, json_string);
 
   // Handle parsing errors
-  if (error) {
+  if (error)
+  {
     send_error_response("error", String("JSON parsing error: ") + error.c_str());
     return;
   }
 
   // Validate command field
-  if (!doc["command"].is<const char*>()) {
+  if (!doc["command"].is<const char *>())
+  {
     send_error_response("error", "Missing 'command' field in JSON");
     return;
   }
-  
-  const char* command = doc["command"];
-  
+
+  const char *command = doc["command"];
+
   // Prepare response
   JsonDocument response_doc;
   response_doc["type"] = "response";
   response_doc["command"] = command;
-  
+
   // Find and execute the command handler
   bool command_found = false;
-  for (size_t i = 0; i < COMMAND_COUNT; i++) {
-    if (strcmp(command, COMMAND_REGISTRY[i].name) == 0) {
+  for (size_t i = 0; i < COMMAND_COUNT; i++)
+  {
+    if (strcmp(command, COMMAND_REGISTRY[i].name) == 0)
+    {
       command_found = true;
       COMMAND_REGISTRY[i].handler(doc, response_doc);
       break;
     }
   }
-  
+
   // Handle unknown commands
-  if (!command_found) {
+  if (!command_found)
+  {
     response_doc["status"] = "error";
     response_doc["message"] = "Unknown command: " + String(command);
   }
-  
+
   // Send the response
   send_json_response(response_doc);
 }
