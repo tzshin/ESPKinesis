@@ -106,7 +106,10 @@ void send_json_response(const JsonDocument &response_doc)
  * @param error_message The error message
  * @param command Optional command that caused the error
  */
-void send_error_response(const char *error_type, const String &error_message, const char *command = nullptr)
+void send_error_response(
+    const char *error_type,
+    const String &error_message,
+    const char *command = nullptr)
 {
   JsonDocument error_doc;
   error_doc["type"] = error_type;
