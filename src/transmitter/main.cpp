@@ -68,14 +68,24 @@ void on_radio_send(const uint8_t *mac_addr, esp_now_send_status_t status)
   }
 }
 
-// --- Update Target Data from PPM ---
+// --- Update Targets Channels Data ---
 void update_channels()
 {
+  unsigned long current_time = micros();
+
   for (auto &target : target_manager.get_targets())
   {
-    for (int i = 0; i < tmanager::TARGET_CHANNEL_COUNT; i++)
+    if (target.channels_overridden && current_time >= target.override_timeout)
     {
-      target.data.channels[i] = ppm_reader.rawChannelValue(i + 1);
+      target.channels_overridden = false;
+    }
+
+    if (!target.channels_overridden)
+    {
+      for (int i = 0; i < tmanager::TARGET_CHANNEL_COUNT; i++)
+      {
+        target.data.channels[i] = ppm_reader.rawChannelValue(i + 1);
+      }
     }
   }
 }
@@ -132,15 +142,16 @@ void send_error_response(
 bool handle_override_channels(const JsonDocument &doc, JsonDocument &response_doc)
 {
   // Validate required fields
-  if (!doc["target_id"].is<int>() || !doc["channels"].is<JsonArrayConst>())
+  if (!doc["target_id"].is<int>() || !doc["channels"].is<JsonArrayConst>() || !doc["duration"].is<unsigned long>())
   {
     response_doc["status"] = "error";
-    response_doc["message"] = "Missing required fields: target_id and/or channels";
+    response_doc["message"] = "Missing required fields: target_id, channels, and/or duration";
     return false;
   }
 
   int target_id = doc["target_id"];
   JsonArrayConst channels = doc["channels"].as<JsonArrayConst>();
+  unsigned long duration_ms = doc["duration"].as<unsigned long>();
 
   // Find the target by ID
   auto *target = target_manager.get_target_by_id(target_id);
@@ -161,6 +172,14 @@ bool handle_override_channels(const JsonDocument &doc, JsonDocument &response_do
     return false;
   }
 
+  // Validate duration
+  if (duration_ms < 1)
+  {
+    response_doc["status"] = "error";
+    response_doc["message"] = "Duration must be at least 1ms";
+    return false;
+  }
+
   // Update channels from the received data
   for (size_t i = 0; i < channels.size(); i++)
   {
@@ -172,19 +191,28 @@ bool handle_override_channels(const JsonDocument &doc, JsonDocument &response_do
     }
 
     int value = channels[i];
-    // Validate channel range (typical RC values)
-    if (value < 1000 || value > 2000)
+
+    if (value == -1)
+    {
+      continue;
+    }
+    else if (value < 1000 || value > 2000)
     {
       response_doc["status"] = "error";
-      response_doc["message"] = "Channel values must be between 1000-2000";
+      response_doc["message"] = "Channel values must be between 1000-2000 or -1 to skip";
       return false;
     }
 
     target->data.channels[i] = value;
   }
 
+  // Set the override flag and timeout
+  target->channels_overridden = true;
+  target->override_timeout = micros() + (duration_ms * 1000); // Convert ms to microseconds
+
   response_doc["status"] = "success";
-  response_doc["message"] = "Channels updated for target " + String(target_id);
+  response_doc["message"] = "Channels updated for target " + String(target_id) +
+                            " with " + String(duration_ms) + "ms timeout";
   return true;
 }
 
@@ -318,7 +346,7 @@ void loop()
   // Process any serial input
   process_serial_input();
 
-  // Update channel data from PPM input
+  // Update targets channels data
   update_channels();
 
   // Send channel data to targets at configured frequency

@@ -33,8 +33,11 @@ namespace tmanager
     bool connection_state;              // ESP-NOW send success flag
     unsigned long last_successful_send; // Timestamp of the last successful send in microseconds
     String name;                        // Optional human-readable name
+    bool channels_overridden;           // Flag indicating if channels are currently overridden
+    unsigned long override_timeout;     // Timestamp when the override should expire (in micros)
 
-    Target() : id(0), data(0), connection_state(false), last_successful_send(0), name("") {}
+    Target() : id(0), data(0), connection_state(false), last_successful_send(0), name(""), 
+               channels_overridden(false), override_timeout(0) {}
   };
 
   class TargetManager
@@ -158,7 +161,22 @@ namespace tmanager
       }
       json += "],";
       json += "\"connection_state\": " + String(target->connection_state ? "true" : "false") + ",";
-      json += "\"last_successful_send\": " + String(target->last_successful_send);
+      json += "\"last_successful_send\": " + String(target->last_successful_send) + ",";
+      json += "\"channels_overridden\": " + String(target->channels_overridden ? "true" : "false");
+      
+      // Add remaining time if channels are overridden
+      if (target->channels_overridden) {
+        unsigned long current_time = micros();
+        unsigned long remaining_time = 0;
+        
+        // Check if we haven't already passed the timeout
+        if (target->override_timeout > current_time) {
+          remaining_time = (target->override_timeout - current_time) / 1000; // Convert to ms
+        }
+        
+        json += ",\"override_timeout_remaining\": " + String(remaining_time);
+      }
+      
       json += "}";
       return json;
     }
