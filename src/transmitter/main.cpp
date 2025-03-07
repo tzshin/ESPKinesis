@@ -75,12 +75,12 @@ void update_channels()
 
   for (auto &target : target_manager.get_targets())
   {
-    if (target.channels_overridden && current_time >= target.override_timeout)
+    if (target.is_channels_overridden && current_time >= target.override_timeout)
     {
-      target.channels_overridden = false;
+      target.is_channels_overridden = false;
     }
 
-    if (!target.channels_overridden)
+    if (!target.is_channels_overridden)
     {
       for (int i = 0; i < tmanager::TARGET_CHANNEL_COUNT; i++)
       {
@@ -207,7 +207,7 @@ bool handle_override_channels(const JsonDocument &doc, JsonDocument &response_do
   }
 
   // Set the override flag and timeout
-  target->channels_overridden = true;
+  target->is_channels_overridden = true;
   target->override_timeout = micros() + (duration_ms * 1000); // Convert ms to microseconds
 
   response_doc["status"] = "success";

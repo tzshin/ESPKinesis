@@ -33,11 +33,11 @@ namespace tmanager
     ChannelData data;                   // Current channel outputs
     bool connection_state;              // ESP-NOW send success flag
     unsigned long last_successful_send; // Timestamp of the last successful send in microseconds
-    bool channels_overridden;           // Flag indicating if channels are currently overridden
+    bool is_channels_overridden;           // Flag indicating if channels are currently overridden
     unsigned long override_timeout;     // Timestamp when the override should expire (in micros)
 
     Target() : id(0), data(0), connection_state(false), last_successful_send(0), name(""), 
-               channels_overridden(false), override_timeout(0) {}
+               is_channels_overridden(false), override_timeout(0) {}
   };
 
   class TargetManager
@@ -162,10 +162,10 @@ namespace tmanager
       json += "],";
       json += "\"connection_state\": " + String(target->connection_state ? "true" : "false") + ",";
       json += "\"last_successful_send\": " + String(target->last_successful_send) + ",";
-      json += "\"channels_overridden\": " + String(target->channels_overridden ? "true" : "false");
+      json += "\"is_channels_overridden\": " + String(target->is_channels_overridden ? "true" : "false");
       
       // Add remaining time if channels are overridden
-      if (target->channels_overridden) {
+      if (target->is_channels_overridden) {
         unsigned long current_time = micros();
         unsigned long remaining_time = 0;
         
