@@ -149,6 +149,7 @@ namespace tmanager
         return "{}";
 
       String json = "{";
+      
       json += "\"id\": " + String(target->id) + ",";
       json += "\"name\": \"" + target->name + "\",";
       json += "\"mac\": \"" + _mac_to_string(target->mac) + "\",";
@@ -165,17 +166,16 @@ namespace tmanager
       json += "\"is_channels_overridden\": " + String(target->is_channels_overridden ? "true" : "false");
       
       // Add remaining time if channels are overridden
+      unsigned long remaining_time = 0;
       if (target->is_channels_overridden) {
         unsigned long current_time = micros();
-        unsigned long remaining_time = 0;
         
         // Check if we haven't already passed the timeout
         if (target->override_timeout > current_time) {
           remaining_time = (target->override_timeout - current_time) / 1000; // Convert to ms
         }
-        
-        json += ",\"override_timeout_remaining\": " + String(remaining_time);
       }
+      json += ",\"override_timeout_remaining\": " + String(remaining_time);
       
       json += "}";
       return json;
