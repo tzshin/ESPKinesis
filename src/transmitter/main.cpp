@@ -20,7 +20,7 @@ static constexpr unsigned long JSON_UPDATE_PERIOD_US = 1000000UL / JSON_UPDATE_H
 NonBlockingTimer json_update_timer(JSON_UPDATE_PERIOD_US);
 
 // --- Loop Rate Configuration ---
-static constexpr int RADIO_SEND_FREQ_HZ = 10;
+static constexpr int RADIO_SEND_FREQ_HZ = 2;
 static constexpr unsigned long RADIO_SEND_PERIOD_US = 1000000UL / RADIO_SEND_FREQ_HZ;
 NonBlockingTimer radio_send_timer(RADIO_SEND_PERIOD_US);
 
@@ -39,8 +39,14 @@ const CommandEntry COMMAND_REGISTRY[] = {
 const size_t COMMAND_COUNT = sizeof(COMMAND_REGISTRY) / sizeof(CommandEntry);
 
 // --- ESP-NOW / TargetManager Configuration ---
-const uint8_t BROADCAST_ADDRS[][6] = {{0xb0, 0x81, 0x84, 0x06, 0x0e, 0xf0},
-                                      {0xb0, 0x81, 0x84, 0x06, 0x0a, 0xec}};
+const uint8_t BROADCAST_ADDRS[][6] = {{0xb0, 0x81, 0x84, 0x03, 0x9f, 0x74},
+                                      {0xb0, 0x81, 0x84, 0x03, 0xa5, 0xf0},
+                                      {0xb0, 0x81, 0x84, 0x06, 0x12, 0xa0},
+                                      {0x18, 0x8b, 0x0e, 0x91, 0xac, 0xac},
+                                      {0x18, 0x8b, 0x0e, 0x93, 0x48, 0xc0},
+                                      {0xb0, 0x81, 0x84, 0x03, 0xa1, 0xc4},
+                                      {0xb0, 0x81, 0x84, 0x06, 0x03, 0xa8},
+                                      {0xb0, 0x81, 0x84, 0x06, 0x07, 0xbc}};
 static constexpr size_t NUM_BROADCAST_ADDRS =
     sizeof(BROADCAST_ADDRS) / sizeof(BROADCAST_ADDRS[0]);
 tmanager::TargetManager target_manager;
